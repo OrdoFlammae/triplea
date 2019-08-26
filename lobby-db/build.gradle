@@ -23,8 +23,8 @@ import com.bmuschko.gradle.docker.tasks.container.*
 task createDockerfile(type: Dockerfile, group: 'docker') {
     from 'postgres:9.5'
     label(['maintainer': '"tripleabuilderbot@gmail.com"'])
-    environmentVariable 'POSTGRES_USER' 'lobby_user'
-    environmentVariable 'POSTGRES_DB' 'lobby_db'
+    environmentVariable 'POSTGRES_USER', 'lobby_user'
+    environmentVariable 'POSTGRES_DB', 'lobby_db'
 
     // TODO: Copy a production-like snapshot. Snapshots include the flyway tracking tables,
     // running flyway would then be incremental and run only new migrations, better simulating
