@@ -7,6 +7,7 @@ buildscript {
 
 plugins {
     id 'org.flywaydb.flyway' version '5.2.4'
+    id 'com.bmuschko.docker-remote-api' version '5.0.0'
 }
 
 flyway {
@@ -14,6 +15,44 @@ flyway {
     url= 'jdbc:postgresql://localhost:5432/lobby_db'
     user = 'lobby_user'
     password = 'postgres'
+}
+
+import com.bmuschko.gradle.docker.tasks.image.*
+import com.bmuschko.gradle.docker.tasks.container.*
+
+task createDockerfile(type: Dockerfile, group: 'docker') {
+    from 'postgres:9.5'
+    label(['maintainer': '"tripleabuilderbot@gmail.com"'])
+    environmentVariable 'POSTGRES_USER' 'lobby_user'
+    environmentVariable 'POSTGRES_DB' 'lobby_db'
+
+    // TODO: Copy a production-like snapshot. Snapshots include the flyway tracking tables,
+    // running flyway would then be incremental and run only new migrations, better simulating
+    // production.
+    //
+    // copy './src/main/resources/snapshots/SNAPSHOT-FILE' '/docker-entrypoint-initdb.d'
+}
+
+task buildImage(type: DockerBuildImage, group: 'docker') {
+    dependsOn createDockerfile
+    tags.add('triplea/lobby-db:latest')
+}
+
+task createContainer(type: DockerCreateContainer, group: 'docker') {
+    dependsOn buildImage
+    targetImageId buildImage.getImageId()
+    containerName = "triplea-lobby-db"
+    portBindings = [ '5432:5432' ]
+    autoRemove = true
+}
+
+task startContainer(type: DockerStartContainer, group: 'docker') {
+    dependsOn createContainer
+    targetContainerId "triplea-lobby-db"
+}
+
+task stopContainer(type: DockerStopContainer, group: 'docker') {
+    targetContainerId "triplea-lobby-db"
 }
 
 task portableInstaller(type: Zip, group: 'release') {
